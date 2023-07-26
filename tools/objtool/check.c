@@ -409,7 +409,7 @@ static int decode_instructions(struct objtool_file *file)
 {
 	struct section *sec;
 	struct symbol *func;
-	unsigned long offset;
+	unsigned long offset, next_offset;
 	struct instruction *insn;
 	int ret;
 
@@ -441,7 +441,14 @@ static int decode_instructions(struct objtool_file *file)
 		if (!strcmp(sec->name, ".init.text") && !opts.module)
 			sec->init = true;
 
-		for (offset = 0; offset < sec->sh.sh_size; offset += insn->len) {
+		for (offset = 0; offset < sec->sh.sh_size; offset = next_offset) {
+			struct symbol *obj_sym = find_object_containing(sec, offset);
+			if (obj_sym) {
+				/* This is data in the middle of text section, skip it */
+				next_offset = obj_sym->offset + obj_sym->len;
+				continue;
+			}
+
 			if (!insns || idx == INSN_CHUNK_MAX) {
 				insns = calloc(sizeof(*insn), INSN_CHUNK_SIZE);
 				if (!insns) {
@@ -478,6 +485,8 @@ static int decode_instructions(struct objtool_file *file)
 
 			hash_add(file->insn_hash, &insn->hash, sec_offset_hash(sec, insn->offset));
 			nr_insns++;
+
+			next_offset = offset + insn->len;
 		}
 
 //		printf("%s: last chunk used: %d\n", sec->name, (int)idx);
