@@ -58,6 +58,7 @@ ifeq ($(SRCARCH),x86)
 endif
 
 ifeq ($(SRCARCH),arm64)
+	BUILD_ORC := y
 	CFLAGS  += -Wno-nested-externs
 endif
 

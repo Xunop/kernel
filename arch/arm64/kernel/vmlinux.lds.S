@@ -61,6 +61,7 @@
 #define RUNTIME_DISCARD_EXIT
 
 #include <asm-generic/vmlinux.lds.h>
+#include <asm-generic/orc_lookup.h>
 #include <asm/cache.h>
 #include <asm/kernel-pgtable.h>
 #include <asm/kexec.h>
@@ -321,6 +322,8 @@ SECTIONS
 	. = ALIGN(SEGMENT_ALIGN);
 	__pecoff_data_size = ABSOLUTE(. - __initdata_begin);
 	_end = .;
+
+	ORC_UNWIND_TABLE
 
 	STABS_DEBUG
 	DWARF_DEBUG
