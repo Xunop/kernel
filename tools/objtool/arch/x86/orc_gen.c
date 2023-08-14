@@ -12,6 +12,7 @@
 #include <objtool/check.h>
 #include <objtool/warn.h>
 #include <objtool/endianness.h>
+#include <objtool/objtool.h>
 
 static int init_orc_entry(struct orc_entry *orc, struct cfi_state *cfi,
 			  struct instruction *insn)

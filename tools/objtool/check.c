@@ -442,12 +442,12 @@ static int decode_instructions(struct objtool_file *file)
 			sec->init = true;
 
 		for (offset = 0; offset < sec->sh.sh_size; offset = next_offset) {
-			struct symbol *obj_sym = find_object_containing(sec, offset);
-			if (obj_sym) {
-				/* This is data in the middle of text section, skip it */
-				next_offset = obj_sym->offset + obj_sym->len;
-				continue;
-			}
+			//struct symbol *obj_sym = find_object_containing(sec, offset);
+			//if (obj_sym) {
+			//	/* This is data in the middle of text section, skip it */
+			//	next_offset = obj_sym->offset + obj_sym->len;
+			//	continue;
+			//}
 
 			if (!insns || idx == INSN_CHUNK_MAX) {
 				insns = calloc(sizeof(*insn), INSN_CHUNK_SIZE);
@@ -531,7 +531,7 @@ static int decode_instructions(struct objtool_file *file)
 
 	if (opts.stats)
 		printf("nr_insns: %lu\n", nr_insns);
-	
+
 	if (arch_post_process_instructions(file))
 		return -1;
 
@@ -2745,6 +2745,13 @@ static bool has_valid_stack_frame(struct insn_state *state)
 	if (cfi->drap && cfi->regs[CFI_BP].base == CFI_BP)
 		return true;
 
+	//WARN("------------DEBUG-------------------");
+	//WARN("cfi->cfa.base == CFI_BP: %d", cfi->cfa.base == CFI_BP);
+	//WARN("bp->base: %d, bp-offset: %d", cfi->regs[CFI_BP].base, cfi->regs[CFI_BP].offset);
+	//WARN("ra->base: %d, ra-offset: %d", cfi->regs[CFI_RA].base, cfi->regs[CFI_RA].offset);
+	//WARN("cfa.offset: %d", cfi->cfa.offset);
+	//WARN("-------------------------------");
+
 	return false;
 }
 
@@ -3582,11 +3589,34 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 	struct section *sec;
 	u8 visited;
 	int ret;
+	//int tmp;
 
 	sec = insn->sec;
 
+	//tmp = 0;
+	//for_each_insn(file, insn) {
+	//	WARN_INSN(insn, "instruction: %d", tmp++);
+	//}
+
 	while (1) {
 		next_insn = next_insn_to_validate(file, insn);
+
+		//if (strcmp(offstr(sec, next_insn->offset), "arch_setup_dma_ops+0xbc") == 0) {
+		//       // WARN("----------------------------------------");
+		//       // WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//       // WARN("DEBUG: next_insn: %s, next_insn->visited: %d", offstr(next_insn->sec, next_insn->offset), next_insn->visited);
+		//       // WARN("DEBUG:dead_ends: next_insn: %s, now_insn->dead_end: %d", offstr(next_insn->sec, next_insn->offset), insn->dead_end);
+		//       // WARN("----------------------------------------");
+		//}
+
+		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+
+		//if (!strcmp(offstr(sec, insn->offset), "sysvipc_proc_open+0x4c")) {
+		//	WARN("----------------------------------------");
+		//	WARN("DEBUG: insn: %s, insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//	WARN("----------------------------------------");
+		//	WARN("next_insn: %s", offstr(sec, next_insn->offset));
+		//}
 
 		if (func && insn_func(insn) && func != insn_func(insn)->pfunc) {
 			/* Ignore KCFI type preambles, which always fall through */

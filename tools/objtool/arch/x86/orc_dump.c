@@ -5,9 +5,9 @@
 
 #include <unistd.h>
 #include <asm/orc_types.h>
-#include <objtool/objtool.h>
 #include <objtool/warn.h>
 #include <objtool/endianness.h>
+#include <objtool/objtool.h>
 
 static const char *reg_name(unsigned int reg)
 {

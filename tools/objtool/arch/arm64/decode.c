@@ -22,7 +22,26 @@
 #define ADD_OP(op) \
 	if (!(op = calloc(1, sizeof(*op)))) \
 		return -1; \
-	else for (list_add_tail(&op->list, ops_list); op; op = NULL)
+	else for (*ops_list = op, ops_list = &op->next; op; op = NULL)
+
+int arch_ftrace_match(char *name)
+{
+	return !strcmp(name, "_mcount");
+}
+
+bool arch_pc_relative_reloc(struct reloc *reloc)
+{
+	switch(reloc->type) {
+	case R_AARCH64_JUMP26:
+	case R_AARCH64_CALL26:
+		return true;
+
+	default:
+		break;
+	}
+
+	return true;
+}
 
 static unsigned long sign_extend(unsigned long x, int nbits)
 {
@@ -77,7 +96,8 @@ int arch_post_process_instructions(struct objtool_file *file)
 
 		insn = find_insn(file, (struct section *) loc->sec, loc->offset);
 		if (insn) {
-			list_del(&insn->list);
+			// FIXME: DEBUG ONLY
+			//list_del(&insn->list);
 			hash_del(&insn->hash);
 			free(insn);
 		}
@@ -231,7 +251,7 @@ static inline bool aarch64_insn_is_ldst_post(u32 insn)
 }
 
 static int decode_load_store(u32 insn, unsigned long *immediate,
-				 struct list_head *ops_list)
+				 struct stack_op **ops_list)
 {
 	enum aarch64_insn_register base;
 	enum aarch64_insn_register rt;
@@ -252,7 +272,7 @@ static int decode_load_store(u32 insn, unsigned long *immediate,
 	else if (aarch64_insn_is_store_imm(insn) ||
 			aarch64_insn_is_load_imm(insn))
 		*immediate = size * aarch64_insn_decode_immediate(AARCH64_INSN_IMM_12, insn);
-	else /* load/store_pre/post */ 
+	else /* load/store_pre/post */
 		*immediate = sign_extend(aarch64_insn_decode_immediate(AARCH64_INSN_IMM_9,
 								       insn), 9);
 
@@ -325,29 +345,31 @@ static void decode_add_sub_imm(u32 instr, bool set_flags,
 
 int arch_decode_instruction(struct objtool_file *file, const struct section *sec,
 			    unsigned long offset, unsigned int maxlen,
-			    unsigned int *len, enum insn_type *type,
-			    unsigned long *immediate,
-			    struct list_head *ops_list)
+			    struct instruction *insn)
 {
+	struct stack_op **ops_list = &insn->stack_ops;
 	const struct elf *elf = file->elf;
 	struct stack_op *op = NULL;
-	u32 insn;
+	u32 ins;
+	unsigned long *immediate;
+	u8 *type;
 
 	if (!is_arm64(elf))
 		return -1;
 
 	if (maxlen < AARCH64_INSN_SIZE)
 		return 0;
+	insn->len = AARCH64_INSN_SIZE;
+	insn->immediate = 0;
+	insn->type = INSN_OTHER;
+	immediate = &insn->immediate;
+	type = &insn->type;
 
-	*len = AARCH64_INSN_SIZE;
-	*immediate = 0;
-	*type = INSN_OTHER;
+	ins = *(u32 *)(sec->data->d_buf + offset);
 
-	insn = *(u32 *)(sec->data->d_buf + offset);
-
-	switch (aarch64_get_insn_class(insn)) {
+	switch (aarch64_get_insn_class(ins)) {
 	case AARCH64_INSN_CLS_UNKNOWN:
-		if (insn == 0x0) {
+		if (ins == 0x0) {
 			*type = INSN_NOP;
 		} else {
 			WARN("undecoded insn at %s:0x%lx", sec->name, offset);
@@ -357,26 +379,26 @@ int arch_decode_instruction(struct objtool_file *file, const struct section *sec
 		break;
 	case AARCH64_INSN_CLS_DP_IMM:
 		/* Mov register to and from SP are aliases of add_imm */
-		if (aarch64_insn_is_add_imm(insn) ||
-		    aarch64_insn_is_sub_imm(insn)) {
+		if (aarch64_insn_is_add_imm(ins) ||
+		    aarch64_insn_is_sub_imm(ins)) {
 			ADD_OP(op) {
-				decode_add_sub_imm(insn, false, immediate, op);
+				decode_add_sub_imm(ins, false, immediate, op);
 			}
 		}
-		else if (aarch64_insn_is_adds_imm(insn) ||
-			     aarch64_insn_is_subs_imm(insn)) {
+		else if (aarch64_insn_is_adds_imm(ins) ||
+			     aarch64_insn_is_subs_imm(ins)) {
 			ADD_OP(op) {
-				decode_add_sub_imm(insn, true, immediate, op);
+				decode_add_sub_imm(ins, true, immediate, op);
 			}
 		}
 		break;
 	case AARCH64_INSN_CLS_DP_REG:
-		if (aarch64_insn_is_mov_reg(insn)) {
+		if (aarch64_insn_is_mov_reg(ins)) {
 			enum aarch64_insn_register rd;
 			enum aarch64_insn_register rm;
 
-			rd = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RD, insn);
-			rm = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RM, insn);
+			rd = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RD, ins);
+			rm = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RM, ins);
 			if (is_FP(rd) || is_FP(rm)) {
 				ADD_OP(op) {
 					make_add_op(rd, rm, 0, op);
@@ -385,39 +407,39 @@ int arch_decode_instruction(struct objtool_file *file, const struct section *sec
 		}
 		break;
 	case AARCH64_INSN_CLS_BR_SYS:
-		if (aarch64_insn_is_ret(insn) &&
-		    aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RN, insn)
+		if (aarch64_insn_is_ret(ins) &&
+		    aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RN, ins)
 			== AARCH64_INSN_REG_LR) {
 			*type = INSN_RETURN;
-		} else if (aarch64_insn_is_bl(insn)) {
+		} else if (aarch64_insn_is_bl(ins)) {
 			*type = INSN_CALL;
-			*immediate = aarch64_get_branch_offset(insn);
-		} else if (aarch64_insn_is_blr(insn)) {
+			*immediate = aarch64_get_branch_offset(ins);
+		} else if (aarch64_insn_is_blr(ins)) {
 			*type = INSN_CALL_DYNAMIC;
-		} else if (aarch64_insn_is_b(insn)) {
+		} else if (aarch64_insn_is_b(ins)) {
 			*type = INSN_JUMP_UNCONDITIONAL;
-			*immediate = aarch64_get_branch_offset(insn);
-		} else if (aarch64_insn_is_br(insn)) {
+			*immediate = aarch64_get_branch_offset(ins);
+		} else if (aarch64_insn_is_br(ins)) {
 			*type = INSN_JUMP_DYNAMIC;
-		} else if (aarch64_insn_is_branch_imm(insn)) {
+		} else if (aarch64_insn_is_branch_imm(ins)) {
 			/* Remaining branch opcodes are conditional */
 			*type = INSN_JUMP_CONDITIONAL;
-			*immediate = aarch64_get_branch_offset(insn);
-		} else if (aarch64_insn_is_eret(insn)) {
+			*immediate = aarch64_get_branch_offset(ins);
+		} else if (aarch64_insn_is_eret(ins)) {
 			*type = INSN_CONTEXT_SWITCH;
-		} else if (aarch64_insn_is_hint(insn) ||
-				   aarch64_insn_is_barrier(insn)) {
+		} else if (aarch64_insn_is_hint(ins) ||
+				   aarch64_insn_is_barrier(ins)) {
 			*type = INSN_NOP;
-		} else if (aarch64_insn_is_brk(insn)) {
+		} else if (aarch64_insn_is_brk(ins)) {
 			*type = INSN_BUG;
-			*immediate = aarch64_insn_decode_immediate(AARCH64_INSN_IMM_16, insn);
+			*immediate = aarch64_insn_decode_immediate(AARCH64_INSN_IMM_16, ins);
 		}
 		break;
 	case AARCH64_INSN_CLS_LDST:
 	{
 		int ret;
 
-		ret = decode_load_store(insn, immediate, ops_list);
+		ret = decode_load_store(ins, immediate, ops_list);
 		if (ret <= 0)
 			return ret;
 
@@ -427,10 +449,10 @@ int arch_decode_instruction(struct objtool_file *file, const struct section *sec
 		 * Record and remove these data because they
 		 * are never excuted
 		 */
-		if (aarch64_insn_is_ldr_lit(insn)) {
+		if (aarch64_insn_is_ldr_lit(ins)) {
 			long pc_offset;
 
-			pc_offset = insn & GENMASK(23, 5);
+			pc_offset = ins & GENMASK(23, 5);
 			/* Sign extend and multiply by 4 */
 			pc_offset = (pc_offset << (64 - 23));
 			pc_offset = ((pc_offset >> (64 - 23)) >> 5) << 2;
@@ -438,7 +460,7 @@ int arch_decode_instruction(struct objtool_file *file, const struct section *sec
 			ret = record_invalid_insn(sec, offset + pc_offset);
 
 			/* 64-bit literal */
-			if (insn & BIT(30))
+			if (ins & BIT(30))
 				ret = record_invalid_insn(sec, offset + pc_offset + 4);
 
 			return ret;

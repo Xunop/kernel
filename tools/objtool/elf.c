@@ -97,6 +97,31 @@ struct section *find_section_by_name(const struct elf *elf, const char *name)
 {
 	struct section *sec;
 
+	//if (!strcmp(name, ".rela.discard.unreachable") ||
+	//    !strcmp(name, ".rela.discard.reachable")) {
+	//	int bkt;
+
+	//	for (bkt = 0; bkt <= 1000; bkt++) {
+	//		hlist_for_each_entry(sec, &elf->section_name_hash[bkt], name_hash) {
+	//	 		WARN("DEBUG_A_SEC:name: %s", sec->name);
+	//	 	}
+	//	}
+	//}
+
+
+	//if (!strcmp(name, ".rela.discard.reachable")) {
+        //	int bkt;
+
+	//	for (bkt = 0; bkt <= 1000; bkt++) {
+	//		hlist_for_each_entry(sec, &elf->section_name_hash[bkt], name_hash) {
+	//	 		WARN("DEBUG_A_SEC:name: %s", sec->name);
+	//	 	}
+	//	}
+	//	WARN("--------DEBUG---------");
+	//}
+	//
+	//WARN("DEBUG:name: %s", name);
+
 	elf_hash_for_each_possible(section_name, sec, name_hash, str_hash(name)) {
 		if (!strcmp(sec->name, name))
 			return sec;
@@ -219,13 +244,12 @@ struct symbol *find_func_containing(struct section *sec, unsigned long offset)
 
 struct symbol *find_object_containing(const struct section *sec, unsigned long offset)
 {
-	struct rb_node *node;
+	struct rb_root_cached *tree = (struct rb_root_cached *)&sec->symbol_tree;
+	struct symbol *iter;
 
-	rb_for_each(node, &offset, &sec->symbol_tree, symbol_by_offset) {
-		struct symbol *s = rb_entry(node, struct symbol, node);
-
-		if (s->type == STT_OBJECT)
-			return s;
+	__sym_for_each(iter, tree, offset, offset) {
+		if (iter->type == STT_OBJECT)
+			return iter;
 	}
 
 	return NULL;

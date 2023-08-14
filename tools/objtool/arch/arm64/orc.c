@@ -7,8 +7,8 @@
 
 #include <linux/objtool.h>
 
-#include <objtool/orc.h>
 #include <objtool/warn.h>
+#include <objtool/orc.h>
 
 int init_orc_entry(struct orc_entry *orc, struct cfi_state *cfi,
 		   struct instruction *insn)
@@ -18,12 +18,12 @@ int init_orc_entry(struct orc_entry *orc, struct cfi_state *cfi,
 	memset(orc, 0, sizeof(*orc));
 
 	if (!cfi) {
-		orc->end = 0;
+		orc->signal = 0;
 		orc->sp_reg = ORC_REG_UNDEFINED;
 		return 0;
 	}
 
-	orc->end = cfi->end;
+	orc->signal = cfi->end;
 
 	if (cfi->cfa.base == CFI_UNDEFINED) {
 		orc->sp_reg = ORC_REG_UNDEFINED;
