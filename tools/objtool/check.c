@@ -2745,13 +2745,6 @@ static bool has_valid_stack_frame(struct insn_state *state)
 	if (cfi->drap && cfi->regs[CFI_BP].base == CFI_BP)
 		return true;
 
-	//WARN("------------DEBUG-------------------");
-	//WARN("cfi->cfa.base == CFI_BP: %d", cfi->cfa.base == CFI_BP);
-	//WARN("bp->base: %d, bp-offset: %d", cfi->regs[CFI_BP].base, cfi->regs[CFI_BP].offset);
-	//WARN("ra->base: %d, ra-offset: %d", cfi->regs[CFI_RA].base, cfi->regs[CFI_RA].offset);
-	//WARN("cfa.offset: %d", cfi->cfa.offset);
-	//WARN("-------------------------------");
-
 	return false;
 }
 
@@ -3004,6 +2997,16 @@ static int update_cfi_state(struct instruction *insn,
 
 				/* lea disp(%rbp), %rsp */
 				cfi->stack_size = -(op->src.offset + regs[CFI_BP].offset);
+				break;
+			}
+
+			if (op->dest.reg == CFI_BP && op->src.reg == CFI_SP) {
+				// WARN("BP offset: %d, cfa offset: %d", regs[CFI_BP].offset, cfa->offset);
+				// WARN("dest: %d", op->dest.offset);
+				// WARN("src: %d", op->src.offset);
+				/* add x29, sp, #0x40 */
+				cfa->base = op->dest.reg;
+				cfa->offset -= op->src.offset;
 				break;
 			}
 
@@ -3601,13 +3604,13 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 	while (1) {
 		next_insn = next_insn_to_validate(file, insn);
 
-		//if (strcmp(offstr(sec, next_insn->offset), "arch_setup_dma_ops+0xbc") == 0) {
-		//       // WARN("----------------------------------------");
-		//       // WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-		//       // WARN("DEBUG: next_insn: %s, next_insn->visited: %d", offstr(next_insn->sec, next_insn->offset), next_insn->visited);
-		//       // WARN("DEBUG:dead_ends: next_insn: %s, now_insn->dead_end: %d", offstr(next_insn->sec, next_insn->offset), insn->dead_end);
-		//       // WARN("----------------------------------------");
-		//}
+		// if (strcmp(offstr(sec, insn->offset), "sysvipc_msg_proc_show+0xc") == 0) {
+		//        WARN("----------------------------------------");
+		//        WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//        WARN("DEBUG: next_insn: %s, next_insn->visited: %d", offstr(next_insn->sec, next_insn->offset), next_insn->visited);
+		//        WARN("DEBUG:dead_ends: next_insn: %s, now_insn->dead_end: %d", offstr(next_insn->sec, next_insn->offset), insn->dead_end);
+		//        WARN("----------------------------------------");
+		// }
 
 		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
 
@@ -4564,6 +4567,12 @@ static int validate_reachable_instructions(struct objtool_file *file)
 		return 0;
 
 	for_each_insn(file, insn) {
+		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//if (strcmp(offstr(insn->sec, insn->offset), "ipcget+0x2b6") == 0) {
+		//        WARN("----------------------------------------");
+		//        WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//        WARN("----------------------------------------");
+		//}
 		if (insn->visited || ignore_unreachable_insn(file, insn))
 			continue;
 

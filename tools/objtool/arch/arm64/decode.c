@@ -31,16 +31,16 @@ int arch_ftrace_match(char *name)
 
 bool arch_pc_relative_reloc(struct reloc *reloc)
 {
-	switch(reloc->type) {
-	case R_AARCH64_JUMP26:
-	case R_AARCH64_CALL26:
-		return true;
+	//switch(reloc->type) {
+	//case R_AARCH64_JUMP26:
+	//case R_AARCH64_CALL26:
+	//	return true;
 
-	default:
-		break;
-	}
+	//default:
+	//	break;
+	//}
 
-	return true;
+	return false;
 }
 
 static unsigned long sign_extend(unsigned long x, int nbits)

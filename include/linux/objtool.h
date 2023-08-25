@@ -6,8 +6,6 @@
 
 #ifdef CONFIG_OBJTOOL
 
-#include <asm/asm.h>
-
 #ifndef __ASSEMBLY__
 
 #define UNWIND_HINT(type, sp_reg, sp_offset, signal)	\
