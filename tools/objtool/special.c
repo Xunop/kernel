@@ -183,10 +183,10 @@ int special_get_alts(struct elf *elf, struct list_head *alts)
 
 			list_add_tail(&alt->list, alts);
 		}
-	// WARN("------DEBUG------");
-	// WARN("origin: %lx, new: %lx", alt->orig_off, alt->new_off);
-	// WARN("------DEBUG------");
-	// WARN("origin: %s, new: %s", alt->orig_sec->name, alt->new_sec->name);
+       // WARN("------DEBUG------");
+       // WARN("origin: %lx, new: %lx", alt->orig_off, alt->new_off);
+       // WARN("------DEBUG------");
+       // WARN("origin: %s, new: %s", alt->orig_sec->name, alt->new_sec->name);
 	}
 
 	return 0;

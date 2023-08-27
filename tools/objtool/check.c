@@ -2020,6 +2020,9 @@ static int add_special_section_alts(struct objtool_file *file)
 		}
 
 		//WARN("----DEBUG----");
+		//WARN("new_len %d, ori_len %d", special_alt->new_len, special_alt->orig_len);
+		//WARN("new_off %lx, new_sec %s", special_alt->new_off, special_alt->new_sec->name);
+		//WARN("new_off %lx, new_sec %s", special_alt->new_off, special_alt->new_sec->name);
 		//WARN_INSN(orig_insn, "DEBUG:origin");
 
 		if (special_alt->group) {

@@ -18,12 +18,12 @@ int init_orc_entry(struct orc_entry *orc, struct cfi_state *cfi,
 	memset(orc, 0, sizeof(*orc));
 
 	if (!cfi) {
-		orc->signal = 0;
+		orc->end = 0;
 		orc->sp_reg = ORC_REG_UNDEFINED;
 		return 0;
 	}
 
-	orc->signal = cfi->end;
+	orc->end = cfi->end;
 
 	if (cfi->cfa.base == CFI_UNDEFINED) {
 		orc->sp_reg = ORC_REG_UNDEFINED;
