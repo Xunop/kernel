@@ -2001,6 +2001,10 @@ static int add_special_section_alts(struct objtool_file *file)
 			goto out;
 		}
 
+		if (strcmp(offstr(special_alt->orig_sec, orig_insn->offset), "user_enable_single_step+0x0") == 0) {
+			WARN("----DEBUG----");
+		}
+
 		new_insn = NULL;
 		if (!special_alt->group || special_alt->new_len) {
 			new_insn = find_insn(file, special_alt->new_sec,
@@ -2012,7 +2016,11 @@ static int add_special_section_alts(struct objtool_file *file)
 				ret = -1;
 				goto out;
 			}
+		//WARN_INSN(new_insn, "DEBUG:new");
 		}
+
+		//WARN("----DEBUG----");
+		//WARN_INSN(orig_insn, "DEBUG:origin");
 
 		if (special_alt->group) {
 			if (!special_alt->orig_len) {
@@ -3001,9 +3009,7 @@ static int update_cfi_state(struct instruction *insn,
 			}
 
 			if (op->dest.reg == CFI_BP && op->src.reg == CFI_SP) {
-				// WARN("BP offset: %d, cfa offset: %d", regs[CFI_BP].offset, cfa->offset);
-				// WARN("dest: %d", op->dest.offset);
-				// WARN("src: %d", op->src.offset);
+
 				/* add x29, sp, #0x40 */
 				cfa->base = op->dest.reg;
 				cfa->offset -= op->src.offset;
