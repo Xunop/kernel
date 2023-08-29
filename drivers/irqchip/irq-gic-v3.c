@@ -512,7 +512,7 @@ static u32 __gic_get_ppi_index(irq_hw_number_t hwirq)
 	case EPPI_RANGE:
 		return hwirq - EPPI_BASE_INTID + 16;
 	default:
-		unreachable();
+		return -EINVAL;
 	}
 }
 

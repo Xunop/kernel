@@ -2001,10 +2001,6 @@ static int add_special_section_alts(struct objtool_file *file)
 			goto out;
 		}
 
-		if (strcmp(offstr(special_alt->orig_sec, orig_insn->offset), "user_enable_single_step+0x0") == 0) {
-			WARN("----DEBUG----");
-		}
-
 		new_insn = NULL;
 		if (!special_alt->group || special_alt->new_len) {
 			new_insn = find_insn(file, special_alt->new_sec,
@@ -2016,14 +2012,7 @@ static int add_special_section_alts(struct objtool_file *file)
 				ret = -1;
 				goto out;
 			}
-		//WARN_INSN(new_insn, "DEBUG:new");
 		}
-
-		//WARN("----DEBUG----");
-		//WARN("new_len %d, ori_len %d", special_alt->new_len, special_alt->orig_len);
-		//WARN("new_off %lx, new_sec %s", special_alt->new_off, special_alt->new_sec->name);
-		//WARN("new_off %lx, new_sec %s", special_alt->new_off, special_alt->new_sec->name);
-		//WARN_INSN(orig_insn, "DEBUG:origin");
 
 		if (special_alt->group) {
 			if (!special_alt->orig_len) {
@@ -3601,34 +3590,11 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 	struct section *sec;
 	u8 visited;
 	int ret;
-	//int tmp;
 
 	sec = insn->sec;
 
-	//tmp = 0;
-	//for_each_insn(file, insn) {
-	//	WARN_INSN(insn, "instruction: %d", tmp++);
-	//}
-
 	while (1) {
 		next_insn = next_insn_to_validate(file, insn);
-
-		// if (strcmp(offstr(sec, insn->offset), "sysvipc_msg_proc_show+0xc") == 0) {
-		//        WARN("----------------------------------------");
-		//        WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-		//        WARN("DEBUG: next_insn: %s, next_insn->visited: %d", offstr(next_insn->sec, next_insn->offset), next_insn->visited);
-		//        WARN("DEBUG:dead_ends: next_insn: %s, now_insn->dead_end: %d", offstr(next_insn->sec, next_insn->offset), insn->dead_end);
-		//        WARN("----------------------------------------");
-		// }
-
-		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-
-		//if (!strcmp(offstr(sec, insn->offset), "sysvipc_proc_open+0x4c")) {
-		//	WARN("----------------------------------------");
-		//	WARN("DEBUG: insn: %s, insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-		//	WARN("----------------------------------------");
-		//	WARN("next_insn: %s", offstr(sec, next_insn->offset));
-		//}
 
 		if (func && insn_func(insn) && func != insn_func(insn)->pfunc) {
 			/* Ignore KCFI type preambles, which always fall through */
@@ -4576,12 +4542,6 @@ static int validate_reachable_instructions(struct objtool_file *file)
 		return 0;
 
 	for_each_insn(file, insn) {
-		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-		//if (strcmp(offstr(insn->sec, insn->offset), "ipcget+0x2b6") == 0) {
-		//        WARN("----------------------------------------");
-		//        WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
-		//        WARN("----------------------------------------");
-		//}
 		if (insn->visited || ignore_unreachable_insn(file, insn))
 			continue;
 

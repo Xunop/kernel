@@ -79,16 +79,10 @@ static int get_alt_entry(struct elf *elf, const struct special_entry *entry,
 
 	if (alt->group) {
 
-		//WARN("------DEBUG------");
-		//WARN("ori:d_buf: %p, offset: %lx, entry->orig_len: %d", sec->data->d_buf, offset, entry->orig_len);
-		//WARN("new:d_buf: %p, offset: %lx, entry->new_len: %d", sec->data->d_buf, offset, entry->new_len);
-
 		alt->orig_len = *(unsigned char *)(sec->data->d_buf + offset +
 						   entry->orig_len);
 		alt->new_len = *(unsigned char *)(sec->data->d_buf + offset +
 						  entry->new_len);
-		//WARN("orig_len: %d, new_len: %d", alt->orig_len, alt->new_len);
-		//WARN("------DEBUG------");
 	}
 
 	if (entry->feature) {
@@ -183,10 +177,6 @@ int special_get_alts(struct elf *elf, struct list_head *alts)
 
 			list_add_tail(&alt->list, alts);
 		}
-       // WARN("------DEBUG------");
-       // WARN("origin: %lx, new: %lx", alt->orig_off, alt->new_off);
-       // WARN("------DEBUG------");
-       // WARN("origin: %s, new: %s", alt->orig_sec->name, alt->new_sec->name);
 	}
 
 	return 0;
