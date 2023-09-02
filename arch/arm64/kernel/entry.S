@@ -29,6 +29,7 @@
 #include <asm/thread_info.h>
 #include <asm/asm-uaccess.h>
 #include <asm/unistd.h>
+#include <asm/unwind_hints.h>
 
 	.macro	clear_gp_regs
 	.irp	n,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29
@@ -38,6 +39,7 @@
 
 	.macro kernel_ventry, el:req, ht:req, regsize:req, label:req
 	.align 7
+	UNWIND_HINT_EMPTY
 .Lventry_start\@:
 	.if	\el == 0
 	/*
@@ -45,6 +47,7 @@
 	 * skipped by the trampoline vectors, to trigger the cleanup.
 	 */
 	b	.Lskip_tramp_vectors_cleanup\@
+	UNWIND_HINT_EMPTY
 	.if	\regsize == 64
 	mrs	x30, tpidrro_el0
 	msr	tpidrro_el0, xzr
@@ -118,6 +121,7 @@
 alternative_cb	ARM64_ALWAYS_SYSTEM, spectre_v4_patch_fw_mitigation_enable
 	b	.L__asm_ssbd_skip\@		// Patched to NOP
 alternative_cb_end
+	UNWIND_HINT_REGS
 	ldr_this_cpu	\tmp2, arm64_ssbd_callback_required, \tmp1
 	cbz	\tmp2,	.L__asm_ssbd_skip\@
 	ldr	\tmp2, [tsk, #TSK_TI_FLAGS]
@@ -219,6 +223,7 @@ alternative_cb_end
 	stp	x24, x25, [sp, #16 * 12]
 	stp	x26, x27, [sp, #16 * 13]
 	stp	x28, x29, [sp, #16 * 14]
+	UNWIND_HINT_REGS
 
 	.if	\el == 0
 	clear_gp_regs
@@ -428,6 +433,7 @@ alternative_else_nop_endif
 	ldp	x24, x25, [sp, #16 * 12]
 	ldp	x26, x27, [sp, #16 * 13]
 	ldp	x28, x29, [sp, #16 * 14]
+	UNWIND_HINT_EMPTY
 
 	.if	\el == 0
 alternative_if_not ARM64_UNMAP_KERNEL_AT_EL0
@@ -604,6 +610,7 @@ SYM_CODE_START_LOCAL(ret_to_kernel)
 SYM_CODE_END(ret_to_kernel)
 
 SYM_CODE_START_LOCAL(ret_to_user)
+	UNWIND_HINT_REGS
 	ldr	x19, [tsk, #TSK_TI_FLAGS]	// re-check for single-step
 	enable_step_tsk x19, x2
 #ifdef CONFIG_GCC_PLUGIN_STACKLEAK
@@ -679,6 +686,7 @@ alternative_else_nop_endif
 
 	.macro tramp_ventry, vector_start, regsize, kpti, bhb
 	.align	7
+	UNWIND_HINT_EMPTY
 1:
 	.if	\regsize == 64
 	msr	tpidrro_el0, x30	// Restored in kernel_ventry
@@ -705,6 +713,7 @@ alternative_else_nop_endif
 	 */
 	ANNOTATE_INTRA_FUNCTION_CALL
 	bl	2f
+	UNWIND_HINT_EMPTY
 	b	.
 2:
 	tramp_map_kernel	x30
@@ -735,6 +744,7 @@ alternative_else_nop_endif
 	.endm
 
 	.macro tramp_exit, regsize = 64
+	UNWIND_HINT_EMPTY
 	tramp_data_read_var	x30, this_cpu_vector
 	get_this_cpu_offset x29
 	ldr	x30, [x30, x29]
@@ -866,6 +876,7 @@ NOKPROBE(cpu_switch_to)
  * This is how we return from a fork.
  */
 SYM_CODE_START(ret_from_fork)
+	UNWIND_HINT_REGS
 	bl	schedule_tail
 	cbz	x19, 1f				// not a kernel thread
 	mov	x0, x20

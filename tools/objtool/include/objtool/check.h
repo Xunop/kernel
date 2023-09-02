@@ -36,6 +36,12 @@ struct alt_group {
 	struct cfi_state **cfi;
 };
 
+struct alternative {
+	struct alternative *next;
+	struct instruction *insn;
+	bool skip_orig;
+};
+
 #define INSN_CHUNK_BITS		8
 #define INSN_CHUNK_SIZE		(1 << INSN_CHUNK_BITS)
 #define INSN_CHUNK_MAX		(INSN_CHUNK_SIZE - 1)

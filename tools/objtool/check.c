@@ -22,12 +22,6 @@
 #include <linux/kernel.h>
 #include <linux/static_call_types.h>
 
-struct alternative {
-	struct alternative *next;
-	struct instruction *insn;
-	bool skip_orig;
-};
-
 static unsigned long nr_cfi, nr_cfi_reused, nr_cfi_cache;
 
 static struct cfi_init_state initial_func_cfi;
