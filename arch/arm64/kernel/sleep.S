@@ -4,6 +4,7 @@
 #include <asm/asm-offsets.h>
 #include <asm/assembler.h>
 #include <asm/smp.h>
+#include <asm/unwind_hints.h>
 
 	.text
 /*
@@ -91,6 +92,7 @@ SYM_FUNC_START(__cpu_suspend_enter)
 	str	x0, [x1]
 	add	x0, x0, #SLEEP_STACK_DATA_SYSTEM_REGS
 	stp	x29, lr, [sp, #-16]!
+	mov	x29, sp
 	bl	cpu_do_suspend
 	ldp	x29, lr, [sp], #16
 	mov	x0, #1
@@ -99,6 +101,7 @@ SYM_FUNC_END(__cpu_suspend_enter)
 
 	.pushsection ".idmap.text", "a"
 SYM_CODE_START(cpu_resume)
+	UNWIND_HINT_EMPTY
 	mov	x0, xzr
 	bl	init_kernel_el
 	mov	x19, x0			// preserve boot mode
@@ -116,7 +119,8 @@ SYM_CODE_END(cpu_resume)
 	.ltorg
 	.popsection
 
-SYM_FUNC_START(_cpu_resume)
+SYM_CODE_START(_cpu_resume)
+	UNWIND_HINT_EMPTY
 	mov	x0, x19
 	bl	finalise_el2
 
@@ -155,4 +159,4 @@ SYM_FUNC_START(_cpu_resume)
 	ldp	x29, lr, [x29]
 	mov	x0, #0
 	ret
-SYM_FUNC_END(_cpu_resume)
+SYM_CODE_END(_cpu_resume)

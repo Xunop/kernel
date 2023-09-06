@@ -2,6 +2,12 @@
 #
 # Makefile for the linux kernel.
 #
+OBJECT_FILES_NON_STANDARD_hyp-stub.o := y
+OBJECT_FILES_NON_STANDARD_head.o := y
+OBJECT_FILES_NON_STANDARD_proton-pack.o := y
+OBJECT_FILES_NON_STANDARD_entry-fpsimd.o := y
+OBJECT_FILES_NON_STANDARD_sleep.o := y
+OBJECT_FILES_NON_STANDARD_efi-rt-wrapper.o := y
 
 CFLAGS_armv8_deprecated.o := -I$(src)
 

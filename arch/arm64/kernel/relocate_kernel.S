@@ -10,6 +10,7 @@
 
 #include <linux/kexec.h>
 #include <linux/linkage.h>
+#include <asm/unwind_hints.h>
 
 #include <asm/assembler.h>
 #include <asm/kexec.h>
@@ -37,6 +38,7 @@
  * safe memory that has been set up to be preserved during the copy operation.
  */
 SYM_CODE_START(arm64_relocate_new_kernel)
+	UNWIND_HINT_EMPTY
 	/*
 	 * The kimage structure isn't allocated specially and may be clobbered
 	 * during relocation. We must load any values we need from it prior to

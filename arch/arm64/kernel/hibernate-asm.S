@@ -14,6 +14,7 @@
 #include <asm/memory.h>
 #include <asm/page.h>
 #include <asm/virt.h>
+#include <asm/unwind_hints.h>
 
 /*
  * Resume from hibernate
@@ -46,6 +47,7 @@
  */
 .pushsection    ".hibernate_exit.text", "ax"
 SYM_CODE_START(swsusp_arch_suspend_exit)
+	UNWIND_HINT_EMPTY
 	/*
 	 * We execute from ttbr0, change ttbr1 to our copied linear map tables
 	 * with a break-before-make via the zero page

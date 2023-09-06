@@ -12,6 +12,7 @@
 #include <linux/linkage.h>
 #include <linux/init.h>
 #include <linux/pgtable.h>
+#include <asm/unwind_hints.h>
 
 #include <asm/asm_pointer_auth.h>
 #include <asm/assembler.h>
@@ -57,9 +58,11 @@
 	/*
 	 * DO NOT MODIFY. Image header expected by Linux boot-loaders.
 	 */
-	efi_signature_nop			// special NOP to identity as PE/COFF executable
+	SYM_DATA_LOCAL(efi_nop, efi_signature_nop)	// special NOP to identity as PE/COFF executable
+	UNWIND_HINT_EMPTY
 	b	primary_entry			// branch to kernel start, magic
-	.quad	0				// Image load offset from start of RAM, little-endian
+	SYM_DATA_LOCAL(_zero_reserved, .quad	0)	// Image load offset from start of RAM, little-endian
+	SYM_DATA_START_LOCAL(_arm64_common_header)
 	le64sym	_kernel_size_le			// Effective size of kernel image, little-endian
 	le64sym	_kernel_flags_le		// Informative flags, little-endian
 	.quad	0				// reserved
@@ -67,6 +70,7 @@
 	.quad	0				// reserved
 	.ascii	ARM64_IMAGE_MAGIC		// Magic number
 	.long	.Lpe_header_offset		// Offset to the PE header.
+	SYM_DATA_END(_arm64_common_header)
 
 	__EFI_PE_HEADER
 
@@ -161,6 +165,7 @@ SYM_CODE_END(record_mmu_state)
  * Preserve the arguments passed by the bootloader in x0 .. x3
  */
 SYM_CODE_START_LOCAL(preserve_boot_args)
+	UNWIND_HINT_EMPTY
 	mov	x21, x0				// x21=FDT
 
 	adr_l	x0, boot_args			// record the contents of
@@ -177,7 +182,7 @@ SYM_CODE_START_LOCAL(preserve_boot_args)
 	ret
 SYM_CODE_END(preserve_boot_args)
 
-SYM_FUNC_START_LOCAL(clear_page_tables)
+SYM_CODE_START_LOCAL(clear_page_tables)
 	/*
 	 * Clear the init page tables.
 	 */
@@ -186,7 +191,7 @@ SYM_FUNC_START_LOCAL(clear_page_tables)
 	sub	x2, x1, x0
 	mov	x1, xzr
 	b	__pi_memset			// tail call
-SYM_FUNC_END(clear_page_tables)
+SYM_CODE_END(clear_page_tables)
 
 /*
  * Macro to populate page table entries, these entries can be pointers to the next level
@@ -310,7 +315,7 @@ SYM_FUNC_END(clear_page_tables)
  * x5: attributes to set on the updated region
  * x6: order of the last level mappings
  */
-SYM_FUNC_START_LOCAL(remap_region)
+SYM_CODE_START_LOCAL(remap_region)
 	sub	x3, x3, #1		// make end inclusive
 
 	// Get the index offset for the start of the last level table
@@ -329,9 +334,9 @@ SYM_FUNC_START_LOCAL(remap_region)
 
 	populate_entries x0, x4, x2, x3, x5, x6, x7
 	ret
-SYM_FUNC_END(remap_region)
+SYM_CODE_END(remap_region)
 
-SYM_FUNC_START_LOCAL(create_idmap)
+SYM_CODE_START_LOCAL(create_idmap)
 	mov	x28, lr
 	/*
 	 * The ID map carries a 1:1 mapping of the physical address range
@@ -418,9 +423,9 @@ SYM_FUNC_START_LOCAL(create_idmap)
 	adrp	x1, init_idmap_pg_end
 	bl	dcache_inval_poc
 0:	ret	x28
-SYM_FUNC_END(create_idmap)
+SYM_CODE_END(create_idmap)
 
-SYM_FUNC_START_LOCAL(create_kernel_mapping)
+SYM_CODE_START_LOCAL(create_kernel_mapping)
 	adrp	x0, init_pg_dir
 	mov_q	x5, KIMAGE_VADDR		// compile time __va(_text)
 #ifdef CONFIG_RELOCATABLE
@@ -436,7 +441,7 @@ SYM_FUNC_START_LOCAL(create_kernel_mapping)
 
 	dsb	ishst				// sync with page table walker
 	ret
-SYM_FUNC_END(create_kernel_mapping)
+SYM_CODE_END(create_kernel_mapping)
 
 	/*
 	 * Initialize CPU registers with task-specific and cpu-specific context.
@@ -469,7 +474,7 @@ SYM_FUNC_END(create_kernel_mapping)
  *
  *   x0 = __pa(KERNEL_START)
  */
-SYM_FUNC_START_LOCAL(__primary_switched)
+SYM_CODE_START_LOCAL(__primary_switched)
 	adr_l	x4, init_task
 	init_cpu_task x4, x5, x6
 
@@ -522,7 +527,7 @@ SYM_FUNC_START_LOCAL(__primary_switched)
 	ldp	x29, x30, [sp], #16
 	bl	start_kernel
 	ASM_BUG()
-SYM_FUNC_END(__primary_switched)
+SYM_CODE_END(__primary_switched)
 
 /*
  * end early head section, begin head code that is also used for
@@ -544,7 +549,8 @@ SYM_FUNC_END(__primary_switched)
  *
  * x0: whether we are being called from the primary boot path with the MMU on
  */
-SYM_FUNC_START(init_kernel_el)
+SYM_CODE_START(init_kernel_el)
+	UNWIND_HINT_EMPTY
 	mrs	x1, CurrentEL
 	cmp	x1, #CurrentEL_EL2
 	b.eq	init_el2
@@ -606,13 +612,14 @@ SYM_INNER_LABEL(init_el2, SYM_L_LOCAL)
 	mov	w0, #BOOT_CPU_MODE_EL2
 	orr	x0, x0, x2
 	eret
-SYM_FUNC_END(init_kernel_el)
+SYM_CODE_END(init_kernel_el)
 
 	/*
 	 * This provides a "holding pen" for platforms to hold all secondary
 	 * cores are held until we're ready for them to initialise.
 	 */
-SYM_FUNC_START(secondary_holding_pen)
+SYM_CODE_START(secondary_holding_pen)
+	UNWIND_HINT_EMPTY
 	mov	x0, xzr
 	bl	init_kernel_el			// w0=cpu_boot_mode
 	mrs	x2, mpidr_el1
@@ -624,19 +631,20 @@ pen:	ldr	x4, [x3]
 	b.eq	secondary_startup
 	wfe
 	b	pen
-SYM_FUNC_END(secondary_holding_pen)
+SYM_CODE_END(secondary_holding_pen)
 
 	/*
 	 * Secondary entry point that jumps straight into the kernel. Only to
 	 * be used where CPUs are brought online dynamically by the kernel.
 	 */
-SYM_FUNC_START(secondary_entry)
+SYM_CODE_START(secondary_entry)
+	UNWIND_HINT_EMPTY
 	mov	x0, xzr
 	bl	init_kernel_el			// w0=cpu_boot_mode
 	b	secondary_startup
-SYM_FUNC_END(secondary_entry)
+SYM_CODE_END(secondary_entry)
 
-SYM_FUNC_START_LOCAL(secondary_startup)
+SYM_CODE_START_LOCAL(secondary_startup)
 	/*
 	 * Common entry point for secondary CPUs.
 	 */
@@ -651,10 +659,11 @@ SYM_FUNC_START_LOCAL(secondary_startup)
 	bl	__enable_mmu
 	ldr	x8, =__secondary_switched
 	br	x8
-SYM_FUNC_END(secondary_startup)
+SYM_CODE_END(secondary_startup)
 
 	.text
-SYM_FUNC_START_LOCAL(__secondary_switched)
+SYM_CODE_START_LOCAL(__secondary_switched)
+	UNWIND_HINT_EMPTY
 	mov	x0, x20
 	bl	set_cpu_boot_mode_flag
 
@@ -678,26 +687,28 @@ SYM_FUNC_START_LOCAL(__secondary_switched)
 
 	bl	secondary_start_kernel
 	ASM_BUG()
-SYM_FUNC_END(__secondary_switched)
+SYM_CODE_END(__secondary_switched)
 
-SYM_FUNC_START_LOCAL(__secondary_too_slow)
+SYM_CODE_START_LOCAL(__secondary_too_slow)
+	UNWIND_HINT_EMPTY
 	wfe
 	wfi
 	b	__secondary_too_slow
-SYM_FUNC_END(__secondary_too_slow)
+SYM_CODE_END(__secondary_too_slow)
 
 /*
  * Sets the __boot_cpu_mode flag depending on the CPU boot mode passed
  * in w0. See arch/arm64/include/asm/virt.h for more info.
  */
-SYM_FUNC_START_LOCAL(set_cpu_boot_mode_flag)
+SYM_CODE_START_LOCAL(set_cpu_boot_mode_flag)
+	UNWIND_HINT_EMPTY
 	adr_l	x1, __boot_cpu_mode
 	cmp	w0, #BOOT_CPU_MODE_EL2
 	b.ne	1f
 	add	x1, x1, #4
 1:	str	w0, [x1]			// Save CPU boot mode
 	ret
-SYM_FUNC_END(set_cpu_boot_mode_flag)
+SYM_CODE_END(set_cpu_boot_mode_flag)
 
 /*
  * The booting CPU updates the failed status @__early_cpu_boot_status,
@@ -731,7 +742,8 @@ SYM_FUNC_END(set_cpu_boot_mode_flag)
  * If it isn't, park the CPU
  */
 	.section ".idmap.text","a"
-SYM_FUNC_START(__enable_mmu)
+SYM_CODE_START(__enable_mmu)
+	UNWIND_HINT_EMPTY
 	mrs	x3, ID_AA64MMFR0_EL1
 	ubfx	x3, x3, #ID_AA64MMFR0_EL1_TGRAN_SHIFT, 4
 	cmp     x3, #ID_AA64MMFR0_EL1_TGRAN_SUPPORTED_MIN
@@ -745,9 +757,10 @@ SYM_FUNC_START(__enable_mmu)
 	set_sctlr_el1	x0
 
 	ret
-SYM_FUNC_END(__enable_mmu)
+SYM_CODE_END(__enable_mmu)
 
-SYM_FUNC_START(__cpu_secondary_check52bitva)
+SYM_CODE_START_LOCAL(__cpu_secondary_check52bitva)
+	UNWIND_HINT_EMPTY
 #if VA_BITS > 48
 	ldr_l	x0, vabits_actual
 	cmp	x0, #52
@@ -765,9 +778,9 @@ SYM_FUNC_START(__cpu_secondary_check52bitva)
 
 #endif
 2:	ret
-SYM_FUNC_END(__cpu_secondary_check52bitva)
+SYM_CODE_END(__cpu_secondary_check52bitva)
 
-SYM_FUNC_START_LOCAL(__no_granule_support)
+SYM_CODE_START_LOCAL(__no_granule_support)
 	/* Indicate that this CPU can't boot and is stuck in the kernel */
 	update_early_cpu_boot_status \
 		CPU_STUCK_IN_KERNEL | CPU_STUCK_REASON_NO_GRAN, x1, x2
@@ -775,10 +788,11 @@ SYM_FUNC_START_LOCAL(__no_granule_support)
 	wfe
 	wfi
 	b	1b
-SYM_FUNC_END(__no_granule_support)
+SYM_CODE_END(__no_granule_support)
 
 #ifdef CONFIG_RELOCATABLE
-SYM_FUNC_START_LOCAL(__relocate_kernel)
+SYM_CODE_START_LOCAL(__relocate_kernel)
+	UNWIND_HINT_EMPTY
 	/*
 	 * Iterate over each entry in the relocation table, and apply the
 	 * relocations in place.
@@ -865,10 +879,10 @@ SYM_FUNC_START_LOCAL(__relocate_kernel)
 #endif
 	ret
 
-SYM_FUNC_END(__relocate_kernel)
+SYM_CODE_END(__relocate_kernel)
 #endif
 
-SYM_FUNC_START_LOCAL(__primary_switch)
+SYM_CODE_START_LOCAL(__primary_switch)
 	adrp	x1, reserved_pg_dir
 	adrp	x2, init_idmap_pg_dir
 	bl	__enable_mmu
@@ -897,4 +911,4 @@ SYM_FUNC_START_LOCAL(__primary_switch)
 	ldr	x8, =__primary_switched
 	adrp	x0, KERNEL_START		// __pa(KERNEL_START)
 	br	x8
-SYM_FUNC_END(__primary_switch)
+SYM_CODE_END(__primary_switch)
