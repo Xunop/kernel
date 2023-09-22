@@ -12,6 +12,7 @@
 #include <asm/cache.h>
 #include <asm/hyp_image.h>
 #include <asm/kernel-pgtable.h>
+#include <asm/orc_lookup.h>
 #include <asm/memory.h>
 #include <asm/page.h>
 
@@ -264,6 +265,8 @@ SECTIONS
 	. = ALIGN(SEGMENT_ALIGN);
 	__pecoff_data_size = ABSOLUTE(. - __initdata_begin);
 	_end = .;
+
+	ORC_UNWIND_TABLE
 
 	STABS_DEBUG
 	DWARF_DEBUG
