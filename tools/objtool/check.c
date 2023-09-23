@@ -1781,7 +1781,7 @@ static bool has_valid_stack_frame(struct insn_state *state)
 	struct cfi_state *cfi = &state->cfi;
 
 	if (cfi->cfa.base == CFI_BP && cfi->regs[CFI_BP].base == CFI_CFA &&
-	    cfi->regs[CFI_BP].offset == -16)
+	    cfi->regs[CFI_BP].offset == -cfi->cfa.offset)
 		return true;
 
 	if (cfi->drap && cfi->regs[CFI_BP].base == CFI_BP)
@@ -1897,6 +1897,7 @@ static int update_cfi_state(struct instruction *insn, struct cfi_state *cfi,
 		}
 		return 0;
 	}
+	//WARN("DEBUG: insn: %s", offstr(insn->sec, insn->offset));
 
 	if (cfi->type == UNWIND_HINT_TYPE_REGS ||
 	    cfi->type == UNWIND_HINT_TYPE_REGS_PARTIAL)
@@ -1908,6 +1909,7 @@ static int update_cfi_state(struct instruction *insn, struct cfi_state *cfi,
 		switch (op->src.type) {
 
 		case OP_SRC_REG:
+
 			if (op->src.reg == CFI_SP && op->dest.reg == CFI_BP &&
 			    cfa->base == CFI_SP &&
 			    regs[CFI_BP].base == CFI_CFA &&
@@ -1993,6 +1995,14 @@ static int update_cfi_state(struct instruction *insn, struct cfi_state *cfi,
 
 				/* lea disp(%rbp), %rsp */
 				cfi->stack_size = -(op->src.offset + regs[CFI_BP].offset);
+				break;
+			}
+
+			if (op->dest.reg == CFI_BP && op->src.reg == CFI_SP) {
+
+				/* add x29, sp, #0x40 */
+				cfa->base = op->dest.reg;
+				cfa->offset -= op->src.offset;
 				break;
 			}
 
