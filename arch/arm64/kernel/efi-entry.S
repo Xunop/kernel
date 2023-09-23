@@ -9,6 +9,7 @@
 #include <linux/init.h>
 
 #include <asm/assembler.h>
+#include <asm/unwind_hints.h>
 
 	__INIT
 
@@ -19,6 +20,7 @@ SYM_CODE_START(efi_enter_kernel)
 	 * point stored in x0. Save those values in registers which are
 	 * callee preserved.
 	 */
+	UNWIND_HINT_EMPTY
 	ldr	w2, =primary_entry_offset
 	add	x19, x0, x2		// relocated Image entrypoint
 	mov	x20, x1			// DTB address
