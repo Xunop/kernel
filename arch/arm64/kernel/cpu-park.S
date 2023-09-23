@@ -13,6 +13,7 @@
 #include <asm/assembler.h>
 #include <asm/cpu_park.h>
 #include <asm/sysreg.h>
+#include <asm/unwind_hints.h>
 #include <asm/virt.h>
 
 .text
@@ -36,6 +37,7 @@ SYM_CODE_END(enter_cpu_park)
 .popsection
 
 SYM_CODE_START(do_cpu_park)
+	UNWIND_HINT_EMPTY
 	ldr	x18, =PARK_MAGIC	/* magic number "park" */
 	add	x1, x0, #8
 	str	x18, [x1]		/* set on-park flag */
