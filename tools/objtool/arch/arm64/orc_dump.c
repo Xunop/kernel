@@ -63,7 +63,6 @@ int orc_dump(const char *_objname)
 	GElf_Rela rela;
 	GElf_Sym sym;
 	Elf_Data *data, *symtab = NULL, *rela_orc_ip = NULL;
-	struct elf dummy_elf = {};
 
 
 	objname = _objname;
@@ -86,7 +85,6 @@ int orc_dump(const char *_objname)
 		WARN_ELF("elf64_getehdr");
 		return -1;
 	}
-	memcpy(&dummy_elf.ehdr, elf64_getehdr(elf), sizeof(dummy_elf.ehdr));
 
 	if (elf_getshdrnum(elf, &nr_sections)) {
 		WARN_ELF("elf_getshdrnum");
