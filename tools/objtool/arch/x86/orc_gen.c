@@ -9,8 +9,8 @@
 #include <linux/objtool.h>
 #include <asm/orc_types.h>
 
-#include "check.h"
-#include "warn.h"
+#include "../../check.h"
+#include "../../warn.h"
 
 int create_orc(struct objtool_file *file)
 {

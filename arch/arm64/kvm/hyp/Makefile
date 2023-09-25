@@ -3,8 +3,6 @@
 # Makefile for Kernel-based Virtual Machine module, HYP part
 #
 
-OBJECT_FILES_NON_STANDARD_hyp-entry.o := y
-
 incdir := $(srctree)/$(src)/include
 subdir-asflags-y := -I$(incdir)
 subdir-ccflags-y := -I$(incdir)				\

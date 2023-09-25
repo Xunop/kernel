@@ -1,11 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) 2017 Josh Poimboeuf <jpoimboe@redhat.com>
- */
-
 #include <unistd.h>
 #include <linux/objtool.h>
 #include <asm/orc_types.h>
+#include "endianness.h"
 #include "../../objtool.h"
 #include "../../warn.h"
 
@@ -14,20 +10,12 @@ static const char *reg_name(unsigned int reg)
 	switch (reg) {
 	case ORC_REG_PREV_SP:
 		return "prevsp";
-	case ORC_REG_DX:
-		return "dx";
-	case ORC_REG_DI:
-		return "di";
 	case ORC_REG_BP:
-		return "bp";
+		return "fp";
 	case ORC_REG_SP:
 		return "sp";
-	case ORC_REG_R10:
-		return "r10";
-	case ORC_REG_R13:
-		return "r13";
 	case ORC_REG_BP_INDIRECT:
-		return "bp(ind)";
+		return "fp(ind)";
 	case ORC_REG_SP_INDIRECT:
 		return "sp(ind)";
 	default:
@@ -54,7 +42,7 @@ static void print_reg(unsigned int reg, int offset)
 	if (reg == ORC_REG_BP_INDIRECT)
 		printf("(bp%+d)", offset);
 	else if (reg == ORC_REG_SP_INDIRECT)
-		printf("(sp%+d)", offset);
+		printf("(sp)%+d", offset);
 	else if (reg == ORC_REG_UNDEFINED)
 		printf("(und)");
 	else
@@ -75,6 +63,7 @@ int orc_dump(const char *_objname)
 	GElf_Rela rela;
 	GElf_Sym sym;
 	Elf_Data *data, *symtab = NULL, *rela_orc_ip = NULL;
+	struct elf dummy_elf = {};
 
 
 	objname = _objname;
@@ -92,6 +81,12 @@ int orc_dump(const char *_objname)
 		WARN_ELF("elf_begin");
 		return -1;
 	}
+
+	if (!elf64_getehdr(elf)) {
+		WARN_ELF("elf64_getehdr");
+		return -1;
+	}
+	memcpy(&dummy_elf.ehdr, elf64_getehdr(elf), sizeof(dummy_elf.ehdr));
 
 	if (elf_getshdrnum(elf, &nr_sections)) {
 		WARN_ELF("elf_getshdrnum");
@@ -194,6 +189,7 @@ int orc_dump(const char *_objname)
 			printf("%llx:", (unsigned long long)(orc_ip_addr + (i * sizeof(int)) + orc_ip[i]));
 		}
 
+		printf("type:%s", orc_type_name(orc[i].type));
 
 		printf(" sp:");
 
@@ -201,10 +197,9 @@ int orc_dump(const char *_objname)
 
 		printf(" bp:");
 
-		print_reg(orc[i].bp_reg, orc[i].bp_offset);
+		print_reg(orc[i].bp_reg, orc[i].sp_offset);
 
-		printf(" type:%s end:%d\n",
-		       orc_type_name(orc[i].type), orc[i].end);
+		printf(" end:%d\n", orc[i].end);
 	}
 
 	elf_end(elf);

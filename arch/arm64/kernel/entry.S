@@ -10,6 +10,7 @@
 #include <linux/arm-smccc.h>
 #include <linux/init.h>
 #include <linux/linkage.h>
+#include <linux/objtool.h>
 
 #include <asm/alternative.h>
 #include <asm/assembler.h>
@@ -28,6 +29,7 @@
 #include <asm/thread_info.h>
 #include <asm/asm-uaccess.h>
 #include <asm/unistd.h>
+#include <asm/unwind_hints.h>
 
 /*
  * Context tracking and irqflag tracing need to instrument transitions between
@@ -62,6 +64,7 @@
 
 	.macro kernel_ventry, el, label, regsize = 64
 	.align 7
+	UNWIND_HINT_EMPTY
 .Lventry_start\@:
 	.if	\el == 0
 	/*
@@ -69,6 +72,7 @@
 	 * skipped by the trampoline vectors, to trigger the cleanup.
 	 */
 	b	.Lskip_tramp_vectors_cleanup\@
+	UNWIND_HINT_EMPTY
 	.if	\regsize == 64
 	mrs	x30, tpidrro_el0
 	msr	tpidrro_el0, xzr
@@ -350,6 +354,7 @@ alternative_else_nop_endif
 	ldp	x24, x25, [sp, #16 * 12]
 	ldp	x26, x27, [sp, #16 * 13]
 	ldp	x28, x29, [sp, #16 * 14]
+	UNWIND_HINT_EMPTY
 
 	.if	\el == 0
 alternative_if_not ARM64_UNMAP_KERNEL_AT_EL0
@@ -618,18 +623,22 @@ __bad_stack:
 	.endm
 
 SYM_CODE_START_LOCAL(el0_sync_invalid)
+	UNWIND_HINT_EMPTY
 	inv_entry 0, BAD_SYNC
 SYM_CODE_END(el0_sync_invalid)
 
 SYM_CODE_START_LOCAL(el0_irq_invalid)
+	UNWIND_HINT_EMPTY
 	inv_entry 0, BAD_IRQ
 SYM_CODE_END(el0_irq_invalid)
 
 SYM_CODE_START_LOCAL(el0_fiq_invalid)
+	UNWIND_HINT_EMPTY
 	inv_entry 0, BAD_FIQ
 SYM_CODE_END(el0_fiq_invalid)
 
 SYM_CODE_START_LOCAL(el0_error_invalid)
+	UNWIND_HINT_EMPTY
 	inv_entry 0, BAD_ERROR
 SYM_CODE_END(el0_error_invalid)
 
@@ -739,6 +748,7 @@ SYM_CODE_END(el0_error)
  * "slow" syscall return path.
  */
 SYM_CODE_START_LOCAL(ret_to_user)
+	UNWIND_HINT_REGS
 	disable_daif
 	gic_prio_kentry_setup tmp=x3
 #ifdef CONFIG_TRACE_IRQFLAGS
@@ -825,6 +835,7 @@ alternative_else_nop_endif
 
 	.macro tramp_ventry, vector_start, regsize, kpti, bhb
 	.align	7
+	UNWIND_HINT_EMPTY
 1:
 	.if	\regsize == 64
 	msr	tpidrro_el0, x30	// Restored in kernel_ventry
@@ -849,7 +860,9 @@ alternative_else_nop_endif
 	 * entry onto the return stack and using a RET instruction to
 	 * enter the full-fat kernel vectors.
 	 */
+	ANNOTATE_INTRA_FUNCTION_CALL
 	bl	2f
+	UNWIND_HINT_EMPTY
 	b	.
 2:
 	tramp_map_kernel	x30
@@ -880,6 +893,7 @@ alternative_else_nop_endif
 	.endm
 
 	.macro tramp_exit, regsize = 64
+	UNWIND_HINT_EMPTY
 	tramp_data_read_var	x30, this_cpu_vector
 	this_cpu_offset x29
 	ldr	x30, [x30, x29]
@@ -1028,6 +1042,7 @@ NOKPROBE(cpu_switch_to)
  * This is how we return from a fork.
  */
 SYM_CODE_START(ret_from_fork)
+	UNWIND_HINT_REGS
 	bl	schedule_tail
 	cbz	x19, 1f				// not a kernel thread
 	mov	x0, x20
@@ -1115,6 +1130,7 @@ NOKPROBE(__sdei_asm_exit_trampoline)
  * want them.
  */
 SYM_CODE_START(__sdei_asm_handler)
+	UNWIND_HINT_EMPTY
 	stp     x2, x3, [x1, #SDEI_EVENT_INTREGS + S_PC]
 	stp     x4, x5, [x1, #SDEI_EVENT_INTREGS + 16 * 2]
 	stp     x6, x7, [x1, #SDEI_EVENT_INTREGS + 16 * 3]
