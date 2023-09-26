@@ -112,6 +112,7 @@ SYM_CODE_END(arm64_relocate_new_kernel)
  * arm64_relocate_new_kernel_size - Number of bytes to copy to the
  * control_code_page.
  */
+.section .rodata
 .globl arm64_relocate_new_kernel_size
 arm64_relocate_new_kernel_size:
 	.quad	.Lcopy_end - arm64_relocate_new_kernel
