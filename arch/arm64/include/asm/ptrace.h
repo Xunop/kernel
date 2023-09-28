@@ -181,6 +181,7 @@ struct pt_regs {
 		struct {
 			u64 regs[31];
 			u64 sp;
+			u64 bp;
 			u64 pc;
 			u64 pstate;
 		};

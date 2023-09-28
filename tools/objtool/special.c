@@ -102,6 +102,7 @@ static int get_alt_entry(struct elf *elf, const struct special_entry *entry,
 	}
 
 	reloc_to_sec_off(orig_reloc, &alt->orig_sec, &alt->orig_off);
+	WARN("DEBUG: insn111: %s", offstr(alt->orig_sec, alt->orig_off));
 
 	if (!entry->group || alt->new_len) {
 		new_reloc = find_reloc_by_dest(elf, sec, offset + entry->new);

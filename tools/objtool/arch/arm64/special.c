@@ -222,6 +222,8 @@ void arch_handle_alternative(unsigned short feature, struct special_alt *alt)
 	 * every time a new feature is added. So the orig/alt region
 	 * length are used to detect those alternatives
 	 */
+	if (alt->orig_len && !alt->new_len)
+		alt->skip_alt = true;
 }
 
 bool arch_support_alt_relocation(struct special_alt *special_alt,

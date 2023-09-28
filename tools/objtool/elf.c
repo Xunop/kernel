@@ -97,6 +97,31 @@ struct section *find_section_by_name(const struct elf *elf, const char *name)
 {
 	struct section *sec;
 
+	//if (!strcmp(name, ".rela.discard.unreachable") ||
+	//    !strcmp(name, ".rela.discard.reachable")) {
+	//	int bkt;
+
+	//	for (bkt = 0; bkt <= 1000; bkt++) {
+	//		hlist_for_each_entry(sec, &elf->section_name_hash[bkt], name_hash) {
+	//	 		WARN("DEBUG_A_SEC:name: %s", sec->name);
+	//	 	}
+	//	}
+	//}
+
+
+	//if (!strcmp(name, ".rela.discard.reachable")) {
+        //	int bkt;
+
+	//	for (bkt = 0; bkt <= 1000; bkt++) {
+	//		hlist_for_each_entry(sec, &elf->section_name_hash[bkt], name_hash) {
+	//	 		WARN("DEBUG_A_SEC:name: %s", sec->name);
+	//	 	}
+	//	}
+	//	WARN("--------DEBUG---------");
+	//}
+	//
+	//WARN("DEBUG:name: %s", name);
+
 	elf_hash_for_each_possible(section_name, sec, name_hash, str_hash(name)) {
 		if (!strcmp(sec->name, name))
 			return sec;

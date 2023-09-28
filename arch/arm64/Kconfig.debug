@@ -38,6 +38,7 @@ config UNWINDER_FRAME_POINTER
           The unwinder itself is fast and it uses less RAM than the ORC
           unwinder, but the kernel text size will grow by ~3% and the kernel's
           overall performance will degrade by roughly 5-10%.
+endchoice
 
 config UNWINDER_ORC
         bool "ORC unwinder"
@@ -47,8 +48,6 @@ config UNWINDER_ORC
 	  unwinding kernel stack traces.  It uses a custom data format which is
 	  a simplified version of the DWARF Call Frame Information standard.
 
-	  The orc unwinder is not implemented on arm64 now, this option is only
-	  used for testing orc data generation.
-endchoice
+          Orc unwinder is still under development and testing for arm64.
 
 source "drivers/hwtracing/coresight/Kconfig"

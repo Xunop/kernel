@@ -61,9 +61,9 @@
 #define RUNTIME_DISCARD_EXIT
 
 #include <asm-generic/vmlinux.lds.h>
-// #include <asm-generic/orc_lookup.h>
 #include <asm/cache.h>
 #include <asm/kernel-pgtable.h>
+#include <asm/orc_lookup.h>
 #include <asm/kexec.h>
 #include <asm/memory.h>
 #include <asm/page.h>

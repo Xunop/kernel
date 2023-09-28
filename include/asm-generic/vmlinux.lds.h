@@ -837,7 +837,7 @@
 #define BUG_TABLE
 #endif
 
-#ifdef CONFIG_UNWINDER_ORC
+/* #ifdef CONFIG_UNWINDER_ORC */
 #define ORC_UNWIND_TABLE						\
 	.orc_header : AT(ADDR(.orc_header) - LOAD_OFFSET) {		\
 		BOUNDED_SECTION_BY(.orc_header, _orc_header)		\
@@ -858,9 +858,10 @@
 			LOOKUP_BLOCK_SIZE) + 1) * 4;			\
 		orc_lookup_end = .;					\
 	}
-#else
-#define ORC_UNWIND_TABLE
-#endif
+/* #else
+* #define ORC_UNWIND_TABLE
+* #endif
+*/
 
 /* Built-in firmware blobs */
 #ifdef CONFIG_FW_LOADER

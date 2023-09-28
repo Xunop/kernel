@@ -199,6 +199,7 @@ static bool __dead_end_function(struct objtool_file *file, struct symbol *func,
 		"arch_call_rest_init",
 		"arch_cpu_idle_dead",
 		"btrfs_assertfail",
+		"barrier",
 		"cpu_bringup_and_idle",
 		"cpu_startup_entry",
 		"cpu_die",
@@ -1833,6 +1834,7 @@ static int handle_group_alt(struct objtool_file *file,
 		return -1;
 	}
 
+	WARN("DEBUG:insn_len: %d", special_alt->new_len);
 	if (special_alt->new_len < special_alt->orig_len) {
 		/*
 		 * Insert a fake nop at the end to make the replacement
@@ -1863,6 +1865,7 @@ static int handle_group_alt(struct objtool_file *file,
 	}
 
 	insn = *new_insn;
+	WARN("DEBUG: insn: %s", offstr(insn->sec, insn->offset));
 	sec_for_each_insn_from(file, insn) {
 		struct reloc *alt_reloc;
 
@@ -2012,6 +2015,8 @@ static int add_special_section_alts(struct objtool_file *file)
 			}
 		}
 
+		WARN("DEBUG:new len %d", special_alt->new_len);
+		WARN("DEBUG:orig insn %s", offstr(orig_insn->sec, orig_insn->offset));
 		if (special_alt->group) {
 			if (!special_alt->orig_len) {
 				WARN_INSN(orig_insn, "empty alternative entry");
@@ -2706,6 +2711,13 @@ static bool has_modified_stack_frame(struct instruction *insn, struct insn_state
 	struct cfi_state *cfi = &state->cfi;
 	int i;
 
+	//WARN("----DEBUG----");
+	//WARN("DEBUG: insn: %s", offstr(insn->sec, insn->offset));
+	//WARN("initial cfa: %d+%d", initial_func_cfi.cfa.base,
+	//     initial_func_cfi.cfa.offset);
+	//WARN("modified cfa: %d+%d", state->cfi.cfa.base,
+	//     state->cfi.cfa.offset);
+	//WARN("--------");
 	if (cfi->cfa.base != initial_func_cfi.cfa.base || cfi->drap)
 		return true;
 
@@ -2742,6 +2754,13 @@ static bool has_valid_stack_frame(struct insn_state *state)
 
 	if (cfi->drap && cfi->regs[CFI_BP].base == CFI_BP)
 		return true;
+
+	//WARN("------------DEBUG-------------------");
+	//WARN("cfi->cfa.base == CFI_BP: %d", cfi->cfa.base == CFI_BP);
+	//WARN("bp->base: %d, bp-offset: %d", cfi->regs[CFI_BP].base, cfi->regs[CFI_BP].offset);
+	//WARN("ra->base: %d, ra-offset: %d", cfi->regs[CFI_RA].base, cfi->regs[CFI_RA].offset);
+	//WARN("cfa.offset: %d", cfi->cfa.offset);
+	//WARN("-------------------------------");
 
 	return false;
 }
@@ -3588,11 +3607,34 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 	struct section *sec;
 	u8 visited;
 	int ret;
+	//int tmp;
 
 	sec = insn->sec;
 
+	//tmp = 0;
+	//for_each_insn(file, insn) {
+	//	WARN_INSN(insn, "instruction: %d", tmp++);
+	//}
+
 	while (1) {
 		next_insn = next_insn_to_validate(file, insn);
+
+		//if (strcmp(offstr(sec, next_insn->offset), "arch_setup_dma_ops+0xbc") == 0) {
+		//       // WARN("----------------------------------------");
+		//       // WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//       // WARN("DEBUG: next_insn: %s, next_insn->visited: %d", offstr(next_insn->sec, next_insn->offset), next_insn->visited);
+		//       // WARN("DEBUG:dead_ends: next_insn: %s, now_insn->dead_end: %d", offstr(next_insn->sec, next_insn->offset), insn->dead_end);
+		//       // WARN("----------------------------------------");
+		//}
+
+		//WARN("DEBUG: now_insn: %s, now_insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+
+		//if (!strcmp(offstr(sec, insn->offset), "sysvipc_proc_open+0x4c")) {
+		//	WARN("----------------------------------------");
+		//	WARN("DEBUG: insn: %s, insn->visited: %d", offstr(insn->sec, insn->offset), insn->visited);
+		//	WARN("----------------------------------------");
+		//	WARN("next_insn: %s", offstr(sec, next_insn->offset));
+		//}
 
 		if (func && insn_func(insn) && func != insn_func(insn)->pfunc) {
 			/* Ignore KCFI type preambles, which always fall through */

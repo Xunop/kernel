@@ -63,6 +63,9 @@ static int init_orc_entry(struct orc_entry *orc, struct cfi_state *cfi,
 	case CFI_BP_INDIRECT:
 		orc->sp_reg = ORC_REG_BP_INDIRECT;
 		break;
+	case CFI_UNDEFINED:
+		orc->sp_reg = ORC_REG_UNDEFINED;
+		break;
 	default:
 		WARN_INSN(insn, "unknown CFA base reg %d", cfi->cfa.base);
 		return -1;

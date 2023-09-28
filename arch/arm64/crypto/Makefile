@@ -5,6 +5,14 @@
 # Copyright (C) 2014 Linaro Ltd <ard.biesheuvel@linaro.org>
 #
 
+OBJECT_FILES_NON_STANDARD_aes-neonbs-core.o := y
+OBJECT_FILES_NON_STANDARD_aes-neon.o := y
+OBJECT_FILES_NON_STANDARD_aes-ce.o := y
+OBJECT_FILES_NON_STANDARD_crct10dif-ce-core.o := y
+OBJECT_FILES_NON_STANDARD_sha256-core.o := y
+OBJECT_FILES_NON_STANDARD_sha512-core.o := y
+OBJECT_FILES_NON_STANDARD_poly1305-core.o := y
+
 obj-$(CONFIG_CRYPTO_SHA1_ARM64_CE) += sha1-ce.o
 sha1-ce-y := sha1-ce-glue.o sha1-ce-core.o
 

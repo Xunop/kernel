@@ -535,7 +535,7 @@ config OBJTOOL
 
 config STACK_VALIDATION
 	bool "Compile-time stack metadata validation"
-	depends on HAVE_STACK_VALIDATION && UNWINDER_FRAME_POINTER
+	depends on HAVE_STACK_VALIDATION && (UNWINDER_FRAME_POINTER || UNWINDER_ORC)
 	select OBJTOOL
 	default n
 	help
