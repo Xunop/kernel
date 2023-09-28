@@ -4,13 +4,12 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 
 #include <linux/objtool.h>
 #include <asm/orc_types.h>
 
-#include "check.h"
-#include "warn.h"
+#include "../../warn.h"
+#include "../../check.h"
 
 int create_orc(struct objtool_file *file)
 {
@@ -44,25 +43,13 @@ int create_orc(struct objtool_file *file)
 		case CFI_BP_INDIRECT:
 			orc->sp_reg = ORC_REG_BP_INDIRECT;
 			break;
-		case CFI_R10:
-			orc->sp_reg = ORC_REG_R10;
-			break;
-		case CFI_R13:
-			orc->sp_reg = ORC_REG_R13;
-			break;
-		case CFI_DI:
-			orc->sp_reg = ORC_REG_DI;
-			break;
-		case CFI_DX:
-			orc->sp_reg = ORC_REG_DX;
-			break;
 		default:
 			WARN_FUNC("unknown CFA base reg %d",
 				  insn->sec, insn->offset, cfa->base);
 			return -1;
 		}
 
-		switch(bp->base) {
+		switch (bp->base) {
 		case CFI_UNDEFINED:
 			orc->bp_reg = ORC_REG_UNDEFINED;
 			break;
@@ -112,7 +99,7 @@ static int create_orc_entry(struct elf *elf, struct section *u_sec, struct secti
 		return -1;
 	}
 
-	reloc->type = R_X86_64_PC32;
+	reloc->type = R_AARCH64_PREL32;
 	reloc->offset = idx * sizeof(int);
 	reloc->sec = ip_relocsec;
 

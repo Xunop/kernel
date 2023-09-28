@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include <linux/objtool.h>
 #include <asm/orc_types.h>
-#include "objtool.h"
-#include "warn.h"
+#include "../../objtool.h"
+#include "../../warn.h"
 
 static const char *reg_name(unsigned int reg)
 {
