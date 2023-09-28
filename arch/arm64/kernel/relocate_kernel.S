@@ -13,7 +13,6 @@
 #include <asm/kexec.h>
 #include <asm/page.h>
 #include <asm/sysreg.h>
-#include <asm/unwind_hints.h>
 
 /*
  * arm64_relocate_new_kernel - Put a 2nd stage image in place and boot it.
@@ -29,7 +28,6 @@
  */
 SYM_CODE_START(arm64_relocate_new_kernel)
 
-	UNWIND_HINT_EMPTY
 	/* Setup the list loop variables. */
 	mov	x18, x2				/* x18 = dtb address */
 	mov	x17, x1				/* x17 = kimage_start */
@@ -113,7 +111,6 @@ SYM_CODE_END(arm64_relocate_new_kernel)
  * control_code_page.
  */
 
-.section .rodata
 .globl arm64_relocate_new_kernel_size
 arm64_relocate_new_kernel_size:
 	.quad	.Lcopy_end - arm64_relocate_new_kernel
